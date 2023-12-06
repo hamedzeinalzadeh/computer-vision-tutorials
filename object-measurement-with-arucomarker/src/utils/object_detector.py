@@ -22,7 +22,7 @@ class HomogenBgDectector:
 
         # apply binary thresholding
         ret, thresh = cv2.threshold(
-            img_gray, 150, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+            img_gray, 50, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
         # detect the contours on the binary image using cv2.CHAIN_APPROX_NONE
         contours, hierarchy = cv2.findContours(

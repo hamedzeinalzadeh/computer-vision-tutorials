@@ -5,12 +5,20 @@ from src.utils.object_detector import HomogenBgDectector
 
 img = cv2.imread(str(IMAGE_DIR / 'test2.png'))
 
-# Load aruco detector
+# # Load aruco detector
+dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_50)
 parameters = cv2.aruco.DetectorParameters()
-aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_50)
-corners, _, _ = cv2.aruco.detectMarkers(img, dictionary=aruco)
+detector = cv2.aruco.ArucoDetector(dictionary, parameters)
+
+# # Detect the 4 corners of the marker
+corners, _, _ = detector.detectMarkers(img) 
+
+
+print(corners)
+
 detector = HomogenBgDectector()
 internal_contours = detector.detect_internal_contours(img)
+
 
 # Detect and Draw objects' boundaries
 for cnt in internal_contours:
