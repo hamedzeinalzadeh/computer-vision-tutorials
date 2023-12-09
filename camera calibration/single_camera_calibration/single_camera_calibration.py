@@ -2,12 +2,13 @@ import glob
 
 import cv2
 import numpy as np
+from loguru import logger
 
 """
 1 - Find chessboard corners(object points and imagepoints)
 """
 
-chessboard_size = (3, 3)
+chessboard_size = (4, 4)
 frameSize = (640, 480)
 
 
@@ -29,13 +30,13 @@ objpoints = []  # 3d point in real world coordinate system
 imgpoints = []  # 2d points in image plane
 
 # Add the paths of single-camera calibration images
-path_to_search = './single_camera_calibration/*.png'
+path_to_search = './single_camera_images/*.jpg'
 images = glob.glob(path_to_search)
 
 for image in images:
 
     img = cv2.imread(image)
-    gray = cv2.cv2tColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Find the chess board corners
     ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
@@ -51,21 +52,25 @@ for image in images:
         # Draw and display the corners
         cv2.drawChessboardCorners(img, chessboard_size, corners, ret)
         cv2.imshow('img', img)
-        cv2.waitKey(1000)
+        cv2.waitKey(100)
 
 
 cv2.destroyAllWindows()
 
 
-############## CALIBRATION #######################################################
+"""
+2 - Calibration
+"""
 
 ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(
     objpoints, imgpoints, frameSize, None, None)
 
 
-############## UNDISTORTION #####################################################
+"""
+3 - Undistortion
+"""
 
-img = cv2.imread('cali5.png')
+img = cv2.imread('./single_camera_images/2023-12-09-014609.jpg')
 h,  w = img.shape[:2]
 newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
     cameraMatrix, dist, (w, h), 1, (w, h))
@@ -74,7 +79,7 @@ newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
 # Undistort
 dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
 
-# crop the image
+# Crop the image
 x, y, w, h = roi
 dst = dst[y:y+h, x:x+w]
 cv2.imwrite('caliResult1.png', dst)
@@ -92,12 +97,14 @@ cv2.imwrite('caliResult2.png', dst)
 
 
 # Reprojection Error
-mean_error = 0
+total_error = 0
 
 for i in range(len(objpoints)):
     imgpoints2, _ = cv2.projectPoints(
         objpoints[i], rvecs[i], tvecs[i], cameraMatrix, dist)
     error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
-    mean_error += error
+    total_error += error
 
-print("total error: {}".format(mean_error/len(objpoints)))
+logger.info(
+    f"Total_Error: {total_error:.3f}, Mean_Error: {total_error/len(objpoints):.3f}")
+
