@@ -159,8 +159,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Ignore JPEG images in this directory
+# Ignore JPEG and png images in this directory
 *.jpg
-
+*.png
 
 
