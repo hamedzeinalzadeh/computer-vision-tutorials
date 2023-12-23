@@ -1,7 +1,6 @@
 from pathlib import Path
-
+import json
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 from tqdm import tqdm
@@ -35,69 +34,19 @@ def calculate_reprojection_error(objpoints, imgpoints, camera_matrix, dist_coeff
     return mean_error
 
 
-# def calculate_stereo_reprojection_error(objpoints, imgpoints_l, imgpoints_r, camera_matrix_l, dist_l, camera_matrix_r, dist_r, rot, trans):
-#     """
-#         NOTE:
-#         - This function assumes that 'rot' and 'trans' are the rotation and translation matrices
-#           describing the transformation from the left to the right camera.
-#         - The function uses the first set of image points to determine the image size for stereo rectification,
-#           so it's important that all image points are consistent in size.
-#         - This approach provides a more comprehensive measurement of the stereo system's accuracy, taking into
-#           account the relative positions and orientations of the two cameras.
-#     """
-#     total_error = 0
+def save_calibration_parameters(file_name, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, Q):
+    calibration_data = {
+        'left_camera_matrix': camera_matrix_l.tolist(),
+        'left_dist_coeffs': dist_coeffs_l.tolist(),
+        'right_camera_matrix': camera_matrix_r.tolist(),
+        'right_dist_coeffs': dist_coeffs_r.tolist(),
+        'R': R.tolist(),  # Rotation matrix
+        'T': T.tolist(),   # Translation vector
+        'Q': Q.tolist()   # Q matrix
+    }
 
-#     height, width = imgpoints_l[0].shape[:2]
-#     R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(
-#         camera_matrix_l, dist_l, camera_matrix_r, dist_r, (width, height), rot, trans)
-
-
-#     logger.info(f'{np.array(objpoints).shape}')
-#     for i in range(len(objpoints)):
-#         # Undistort points
-#         undistorted_points_l = cv2.undistortPoints(
-#             imgpoints_l[i], camera_matrix_l, dist_l, P=P1)
-#         undistorted_points_r = cv2.undistortPoints(
-#             imgpoints_r[i], camera_matrix_r, dist_r, P=P2)
-
-#         # Triangulate points in 3D space
-#         points_4d = cv2.triangulatePoints(
-#             P1, P2, undistorted_points_l, undistorted_points_r)
-#         points_3d = points_4d / np.tile(points_4d[-1, :], (4, 1))
-
-#         # Reproject points back to 2D
-#         reprojected_points_l, _ = cv2.projectPoints(
-#             points_3d[:3].T, R1, trans, camera_matrix_l, dist_l)
-#         reprojected_points_r, _ = cv2.projectPoints(
-#             points_3d[:3].T, R2, -trans, camera_matrix_r, dist_r)
-#         logger.info(f'{reprojected_points_l}')
-#         # Calculate error
-#         error_l = cv2.norm(
-#             imgpoints_l[i], reprojected_points_l[i], cv2.NORM_L2) / len(reprojected_points_l)
-#         error_r = cv2.norm(
-#             imgpoints_r[i], reprojected_points_r[i], cv2.NORM_L2) / len(reprojected_points_r)
-#         total_error += (error_l + error_r) / 2
-
-#         image = cv2.imread('./synched/img_cam0_00.png')
-#         print(image.shape)
-#         # Draw each point on the image
-#         for point in imgpoints_l[i]:
-#             # Assuming your point is in this format
-#             point_array = np.array(point)
-
-#             # Extracting x and y coordinates and converting to a tuple
-#             x, y = point_array.ravel()
-#             point_tuple = (int(x), int(y))
-#             print(point_tuple)
-#             cv2.circle(image, reprojected_points_l, radius=3, color=(0, 0, 255), thickness=-1)  # Red color, filled circle
-#             cv2.circle(image, point_tuple, radius=2, color=(
-#                 0, 255, 255), thickness=-1)  # Red color, filled circle
-
-#         # Display the image
-#         cv2.imshow('Image with Points', image)
-#         cv2.waitKey(0)
-#     mean_error = total_error / len(objpoints)  # Calculate the mean error
-#     return mean_error
+    with open(file_name, 'w') as file:
+        json.dump(calibration_data, file, indent=4)
 
 
 def main():
@@ -188,9 +137,6 @@ def main():
     stereo_map_r = cv2.initUndistortRectifyMap(
         new_camera_matrix_r, dist_r, rect_r, proj_matrix_r, gray_r.shape[::-1], cv2.CV_16SC2)
 
-    # Calculate stereo reprojection error
-    # stereo_error = calculate_stereo_reprojection_error(
-    #     objpoints, imgpoints_l, imgpoints_r, camera_matrix_l, dist_l, camera_matrix_r, dist_r, rot, trans)
 
     # logger.info(f"Stereo Reprojection Error: {stereo_error}")
     logger.info(f"ret_stereo: {ret_stereo}")
@@ -198,6 +144,11 @@ def main():
     # Save Stereo Maps
     save_stereo_maps('stereo_map.xml', stereo_map_l, stereo_map_r)
     logger.info("Stereo maps saved.")
+
+
+    # Save the calibration parameters
+    save_calibration_parameters('calibration_data.json', new_camera_matrix_l, dist_l, new_camera_matrix_r, dist_r, rot, trans, Q)
+    logger.info('Calibration parameters(.json) saved')
 
 
 if __name__ == "__main__":

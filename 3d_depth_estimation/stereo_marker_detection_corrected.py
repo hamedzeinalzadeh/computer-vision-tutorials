@@ -68,7 +68,7 @@ while True:
 
                 coord_text = f"ID {left_id}: X: {float(X):.2f}, Y: {float(Y):.2f}, Z: {float(Z):.2f}"
                 cv2.putText(left_frame, coord_text, (
-                    left_center[0] + 10, left_center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                    left_center[0] + 10, left_center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     cv2.imshow('Left Frame', left_frame)
     cv2.imshow('Right Frame', right_frame)
