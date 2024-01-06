@@ -10,4 +10,7 @@ This repository is dedicated to archiving my computer vision projects.
 
 
 ## :bookmark_tabs: Table of Contents
-- [camera-calibration](00-camera-calibration)
+- [camera-calibration](camera_calibration)
+- [3d-depth-estimatino](3d_depth_estimation)
+- [MiDas-depth-map](midas_depth_map)
+- [notebooks](notebooks)
