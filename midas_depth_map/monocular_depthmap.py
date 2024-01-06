@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 # Load MiDaS model from torch.hub
-model_type = "MiDaS_small"  # Choose from DPT_Large, DPT_Hybrid, or MiDaS_small
+model_type = "DPT_Large"  # Choose from DPT_Large, DPT_Hybrid, or MiDaS_small
 model = torch.hub.load("intel-isl/MiDaS", model_type)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
