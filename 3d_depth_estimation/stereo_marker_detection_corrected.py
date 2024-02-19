@@ -39,6 +39,18 @@ right_cam_index = 2  # Replace with your right camera index
 left_cap = cv2.VideoCapture(left_cam_index)
 right_cap = cv2.VideoCapture(right_cam_index)
 
+
+# Construct the left extrinsic matrix (R|T) with an additional row [0, 0, 0, 1] to make it 4x4
+RT_4x4 = np.hstack((R, T.reshape(-1, 1)))  # Combine R and T horizontally
+RT_4x4 = np.vstack((RT_4x4, [0, 0, 0, 1]))  # Add the row at the bottom
+
+# Augment the left_camera_matrix(intrinsic matrix for left camera) to a 3x4 by adding a column of zeros(M_L)
+M_L = np.hstack((left_camera_matrix, np.zeros((3, 1))))
+
+# Calculate left_projection_matrix(P_L), performing matrix multiplication
+P_L = M_L @ RT_4x4
+
+
 while True:
     ret_left, left_frame = left_cap.read()
     ret_right, right_frame = right_cap.read()
@@ -59,14 +71,27 @@ while True:
             if left_id == right_id:
                 cv2.circle(right_frame, right_center, 2, (0, 0, 255), 3)
 
-                disparity = abs(left_center[0] - right_center[0])
-                Z = (left_camera_matrix[0, 0] * T[0]) / disparity
-                X = (left_center[0] - left_camera_matrix[0, 2]
-                     ) * Z / left_camera_matrix[0, 0]
-                Y = (left_center[1] - left_camera_matrix[1, 2]
-                     ) * Z / left_camera_matrix[0, 0]
+                # Least Squrare method to calculate x, y, z
+                A = np.array([[right_center[0] * M_L[2,0] - M_L[0,0], right_center[0] * M_L[2,1] - M_L[0,1], right_center[0] * M_L[2,2] - M_L[0,2]],
+                               [right_center[1] * M_L[2,0] - M_L[1,0], right_center[1] * M_L[2,1] - M_L[1,1], right_center[1] * M_L[2,2] - M_L[1,2]],
+                                 [left_center[0] * P_L[2,0] - P_L[0,0], left_center[0] * P_L[2,1] - P_L[0,1], left_center[0] * P_L[2,2] - P_L[0,2]],
+                                   [left_center[1] * P_L[2,0] - P_L[1,0], left_center[1] * P_L[2,1] - P_L[1,1], left_center[1] * P_L[2,2] - P_L[1,2]]])
+                b = np.array(
+                    [[M_L[0, 3] - M_L[2, 3]], [M_L[1, 3] - M_L[2, 3]], [P_L[0, 3] - P_L[2, 3]], [P_L[1, 3] - P_L[2, 3]]])
 
-                coord_text = f"ID {left_id}: X: {float(X):.2f}, Y: {float(Y):.2f}, Z: {float(Z):.2f}"
+                # Solve for x using np.linalg.lstsq
+                x_star, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+                X = x_star[0, 0]
+                Y = x_star[1, 0]
+                Z = x_star[2, 0]
+                # disparity = abs(left_center[0] - right_center[0])
+                # Z = (left_camera_matrix[0, 0] * T[0]) / disparity
+                # X = (left_center[0] - left_camera_matrix[0, 2]
+                #      ) * Z / left_camera_matrix[0, 0]
+                # Y = (left_center[1] - left_camera_matrix[1, 2]
+                #      ) * Z / left_camera_matrix[0, 0]
+
+                coord_text = f"ID {left_id}: X: {float(X):.2f}, Y: {float(Y):.2f}, Z: {float(Z):.2f}, dist: {(X ** 2 + Y ** 2 + Z ** 2)**0.5}"
                 cv2.putText(left_frame, coord_text, (
                     left_center[0] + 10, left_center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
