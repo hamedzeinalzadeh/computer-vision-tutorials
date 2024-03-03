@@ -79,8 +79,15 @@ while True:
                 b = np.array(
                     [[M_L[0, 3] - M_L[2, 3]], [M_L[1, 3] - M_L[2, 3]], [P_L[0, 3] - P_L[2, 3]], [P_L[1, 3] - P_L[2, 3]]])
 
+                # Compute the pseudo-inverse of A
+                #A_pinv = np.linalg.pinv(A)
+
+                # Calculate the least squares solution
+                #x_star = np.dot(A_pinv, b)
+                
                 # Solve for x using np.linalg.lstsq
                 x_star, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+                residuals = abs(A @ x_star - b)
                 X = x_star[0, 0]
                 Y = x_star[1, 0]
                 Z = x_star[2, 0]
@@ -94,6 +101,8 @@ while True:
                 coord_text = f"ID {left_id}: X: {float(X):.2f}, Y: {float(Y):.2f}, Z: {float(Z):.2f}, dist: {(X ** 2 + Y ** 2 + Z ** 2)**0.5}"
                 cv2.putText(left_frame, coord_text, (
                     left_center[0] + 10, left_center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                
+                print(residuals)
 
     cv2.imshow('Left Frame', left_frame)
     cv2.imshow('Right Frame', right_frame)
